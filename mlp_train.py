@@ -1,6 +1,4 @@
-import sklearn
 from sklearn.datasets import fetch_california_housing
-import nn
 import optim
 from nn import MSELoss, Module, Linear,ReLU
 from optim import SGD
@@ -9,7 +7,9 @@ import numpy as np
 class Model(Module):
   def __init__(self,in_dim,out_dim):
     super().__init__()
-    self.parameters=[Linear(in_dim,out_dim,True)]
+    self.parameters=[Linear(in_dim,in_dim,True),ReLU(),Linear(in_dim,out_dim,True)]
+
+
   def parameters(self):
     return self.parameters
 from sklearn.datasets import fetch_california_housing

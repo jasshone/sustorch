@@ -11,29 +11,41 @@ class Parameter:
   def forward(self,x):
     return
 class Linear(Parameter):
-  def __init__(self, in_dim, out_dim,bias=True):
-    super().__init__()
-    self.in_dim=in_dim
-    self.out_dim=out_dim
-    self.bias=bias
-    if bias:
-      self.ref = np.concatenate([np.zeros((1,out_dim)),np.random.rand(in_dim, out_dim)*0.01])
-    else:
-      self.ref=np.random.rand(in_dim, out_dim)*0.01
+    def __init__(self, in_dim, out_dim,bias=True):
+        super().__init__()
+        self.in_dim=in_dim
+        self.out_dim=out_dim
+        self.bias=bias
+        if bias:
+            self.bias_param=np.zeros((out_dim))
+            self.ref=np.random.randn(in_dim,out_dim)
 
-  def forward(self, x):
-    if x.shape[-1]<self.in_dim+int(self.bias):
-      x= np.concatenate([np.ones((*x.shape[:-1],1)),x],axis=-1)
-    self.inp=x
-    return x@self.ref
-  def backwards(self, grad, lr):
-    dxdw=self.inp
-    self.gradient=np.transpose(dxdw)@grad
-    self.ref=self.ref-lr*np.mean(self.gradient, axis=-1)[:,None]
-    return self.gradient
-
+    def forward(self, x):
+        self.inp=x
+        out=x@self.ref
+        if self.bias:
+            out=(out+self.bias_param)
+        return out
+    def backwards(self, grad, lr):
+        dxdw=self.inp
+        #print(self.ref.shape)
+        self.gradient=np.transpose(dxdw)@grad
+        self.ref=self.ref-lr*np.mean(self.gradient, axis=-1)[:,None]
+        if self.bias:
+            self.bias_param=self.bias_param-lr*np.mean(grad)
+        #print(self.ref.shape)
+        return self.gradient
 gradient = [0]
-
+class ReLU(Parameter):
+  def __init__(self):
+    self.fn = lambda out: np.where(out>=0, out, 0)
+  def forward(self, x):
+    self.inp=x
+    return self.fn(x)
+  def backwards(self,grad,lr):
+    dxdw=self.inp
+    gradient=np.where(dxdw==0, np.transpose(grad),0)
+    return gradient
 class Loss:
   def __init__(self,value,inp,error,back):
     self.value=value
